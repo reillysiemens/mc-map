@@ -43,14 +43,26 @@ struct Map {
 
 #[derive(Deserialize, Debug)]
 struct MapData {
-    // TODO: How to make this an enum?
     dimension: Dimension,
-    #[serde(rename = "xCenter")]
-    x_center: i32,
-    #[serde(rename = "zCenter")]
-    z_center: i32,
-
+    #[serde(flatten, deserialize_with = "tuple_from_map_center")]
+    center: (i32, i32),
     banners: Vec<Banner>,
+}
+
+fn tuple_from_map_center<'de, D>(deserializer: D) -> Result<(i32, i32), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize, Debug)]
+    struct MapCenter {
+        #[serde(rename = "xCenter")]
+        x: i32,
+        #[serde(rename = "zCenter")]
+        z: i32,
+    }
+
+    let center = MapCenter::deserialize(deserializer)?;
+    Ok((center.x, center.z))
 }
 
 #[derive(Deserialize, Debug, PartialEq, Copy, Clone)]
@@ -114,18 +126,18 @@ where
     Ok(banner_name.text)
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
-struct BannerPosition {
-    x: i32,
-    y: i32,
-    z: i32,
-}
-
 fn tuple_from_banner_position<'de, D>(deserializer: D) -> Result<(i32, i32, i32), D::Error>
 where
     D: Deserializer<'de>,
 {
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "PascalCase")]
+    struct BannerPosition {
+        x: i32,
+        y: i32,
+        z: i32,
+    }
+
     let position = BannerPosition::deserialize(deserializer)?;
     Ok((position.x, position.y, position.z))
 }
