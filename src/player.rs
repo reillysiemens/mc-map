@@ -3,7 +3,8 @@ use serde::de::{self, Deserializer, MapAccess, Unexpected, Visitor};
 use serde::Deserialize;
 use std::fmt;
 
-struct ItemStructure(Option<i32>);
+#[derive(Debug)]
+struct ItemStructure(Option<i64>);
 
 struct ItemStructureVisitor;
 
@@ -22,34 +23,38 @@ impl<'de> Visitor<'de> for ItemStructureVisitor {
         let mut tag: Option<Value> = None;
 
         while let Some(key) = map.next_key::<&str>()? {
-            if key == "id" {
-                let value: &str = map.next_value()?;
+            match key {
+                "id" => {
+                    let value: &str = map.next_value()?;
 
-                if value != "minecraft:filled_map" {
-                    return Ok(ItemStructure(None));
+                    if value == "minecraft:filled_map" {
+                        found_id = true;
+                    }
                 }
-
-                found_id = true;
-            }
-
-            if key == "tag" {
-                tag = Some(map.next_value()?);
-            }
-
-            if found_id && tag.is_some() {
-                break;
+                "tag" => {
+                    tag = Some(map.next_value()?);
+                }
+                _ => {
+                    map.next_value::<Value>()?;
+                }
             }
         }
 
         if !found_id {
-            return Err(de::Error::missing_field("id"));
+            return Ok(ItemStructure(None));
         }
 
         match tag {
-            Some(Value::Compound(compound)) => Ok(ItemStructure(None)),
+            Some(Value::Compound(compound)) => match compound["map"] {
+                Value::Integral(map) => Ok(ItemStructure(Some(map))),
+                ref value => Err(de::Error::invalid_type(
+                    Unexpected::Other(&format!("{:?}", value)),
+                    &"an integer",
+                )),
+            },
             Some(value) => Err(de::Error::invalid_type(
                 Unexpected::Other(&format!("{:?}", value)),
-                &"",
+                &"a compound",
             )),
             None => Err(de::Error::missing_field("tag")),
         }
@@ -67,7 +72,7 @@ impl<'de> Deserialize<'de> for ItemStructure {
 
 // TODO: Change this to PlayerMapNumbers.
 #[derive(Debug)]
-pub struct PlayerMapIds(Vec<i32>);
+pub struct PlayerMapIds(Vec<i64>);
 
 struct PlayerMapIdsVisitor;
 
@@ -87,6 +92,9 @@ impl<'de> Visitor<'de> for PlayerMapIdsVisitor {
         while let Some(key) = map.next_key::<&str>()? {
             if key == "Inventory" || key == "EnderItems" {
                 let item_structure: Vec<ItemStructure> = map.next_value()?;
+                map_ids.extend(item_structure.into_iter().filter_map(|item| item.0));
+            } else {
+                map.next_value::<Value>()?;
             }
         }
 
