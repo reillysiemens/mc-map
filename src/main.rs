@@ -38,9 +38,6 @@ impl<'a> TryFrom<&'a str> for Dimension {
 
 #[derive(Deserialize, Debug)]
 struct Map {
-    #[serde(rename = "DataVersion")]
-    data_version: i32,
-
     data: MapData,
 }
 
@@ -118,21 +115,29 @@ where
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct BannerPosition {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+fn tuple_from_banner_position<'de, D>(deserializer: D) -> Result<(i32, i32, i32), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let position = BannerPosition::deserialize(deserializer)?;
+    Ok((position.x, position.y, position.z))
+}
+
+#[derive(Deserialize, Debug)]
 struct Banner {
     #[serde(rename = "Color")]
     color: BannerColor,
     #[serde(rename = "Name", deserialize_with = "text_from_json")]
     name: String,
-    #[serde(rename = "Pos")]
-    position: Position,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
-struct Position {
-    x: i32,
-    y: i32,
-    z: i32,
+    #[serde(rename = "Pos", deserialize_with = "tuple_from_banner_position")]
+    position: (i32, i32, i32),
 }
 
 fn main() {
@@ -144,7 +149,7 @@ fn main() {
 
     decoder.read_to_end(&mut data).unwrap();
 
-    let map: fastnbt::error::Result<Map> = from_bytes(data.as_slice());
+    let map: Map = from_bytes(data.as_slice()).unwrap();
 
     println!("{:#?}", map);
 }
