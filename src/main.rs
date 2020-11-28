@@ -15,6 +15,35 @@ struct UnknownDimension(String);
 #[error("unknown banner color: {0}")]
 struct UnknownBannerColor(String);
 
+#[derive(Error, Debug)]
+#[error("unknown scale: {0}")]
+struct UnknownScale(i32);
+
+#[derive(Deserialize, Debug, PartialEq, Copy, Clone)]
+#[serde(try_from = "i32")]
+enum Scale {
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+}
+
+impl TryFrom<i32> for Scale {
+    type Error = UnknownScale;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Scale::Zero),
+            1 => Ok(Scale::One),
+            2 => Ok(Scale::Two),
+            3 => Ok(Scale::Three),
+            4 => Ok(Scale::Four),
+            unknown => Err(UnknownScale(unknown)),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, PartialEq, Copy, Clone)]
 #[serde(try_from = "&str")]
 enum Dimension {
