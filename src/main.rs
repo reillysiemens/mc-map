@@ -66,16 +66,22 @@ impl<'a> TryFrom<&'a str> for Dimension {
 }
 
 #[derive(Deserialize, Debug)]
-struct Map {
-    data: MapData,
+struct Map<'a> {
+    #[serde(borrow)]
+    data: MapData<'a>,
 }
 
 #[derive(Deserialize, Debug)]
-struct MapData {
+struct MapData<'a> {
+    scale: Scale,
     dimension: Dimension,
+    #[serde(rename = "unlimitedTracking")]
+    unlimited_tracking: bool,
     #[serde(flatten, deserialize_with = "tuple_from_map_center")]
     center: (i32, i32),
     banners: Vec<Banner>,
+    #[serde(borrow)]
+    colors: &'a [u8],
 }
 
 fn tuple_from_map_center<'de, D>(deserializer: D) -> Result<(i32, i32), D::Error>
