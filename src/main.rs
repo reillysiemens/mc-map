@@ -3,14 +3,14 @@ use std::io::Read;
 use fastnbt::de::from_bytes;
 use flate2::read::GzDecoder;
 
-mod level;
-use level::Level;
+// mod level;
+// use level::Level;
 
-mod map;
-use map::Map;
+// mod map;
+// use map::Map;
 
 mod player;
-use player::PlayerMapIds;
+use player::PlayerMapNumbers;
 
 fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
@@ -23,10 +23,9 @@ fn main() {
 
     // let map: Map = from_bytes(data.as_slice()).unwrap();
     // let level: Level = from_bytes(data.as_slice()).unwrap();
-    // let player: Player = from_bytes(data.as_slice()).unwrap();
-    let player: PlayerMapIds = from_bytes(data.as_slice()).unwrap();
+    let player_map_numbers: PlayerMapNumbers = from_bytes(data.as_slice()).unwrap();
 
     // println!("{:#?}", map);
     // println!("{:#?}", level);
-    println!("{:#?}", player);
+    println!("{:#?}", player_map_numbers);
 }
